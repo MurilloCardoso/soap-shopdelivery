@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Loja Varejista</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f6f9;
+      margin: 0;
+      padding: 2rem;
+      color: #333;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1, h2 {
+      color: #2c3e50;
+      text-align: center;
+    }
+
+    .step {
+      display: none;
+    }
+
+    .step.active {
+      display: block;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 1rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.6rem;
+      margin-top: 0.3rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    .buttons {
+      margin-top: 2rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    button {
+      background-color: #3498db;
+      color: white;
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    pre {
+      background: #ecf0f1;
+      padding: 1rem;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      margin-top: 1rem;
+    }
+
+    .step-indicator {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .step-indicator div {
+      flex: 1;
+      text-align: center;
+      font-weight: bold;
+      color: #ccc;
+    }
+
+    .step-indicator .active {
+      color: #3498db;
+    }
+
+    .divider {
+      margin: 2rem 0;
+      border-top: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📦 Pedido</h1>
+
+    <div class="step-indicator">
+      <div id="step-0-label" class="active">1. Pedido</div>
+      <div id="step-1-label">2. Entrega</div>
+      <div id="step-2-label">3. Revisar</div>
+    </div>
+
+    <div class="step active" id="step-0">
+      <label for="numero">Número do Pedido</label>
+      <input id="numero" placeholder="Ex: 12345" />
+
+      <label for="itens">Itens</label>
+      <input id="itens" placeholder="Ex: Camisa, Calça" />
+
+      <label for="quantidades">Quantidades</label>
+      <input id="quantidades" placeholder="Ex: 2, 1" />
+    </div>
+
+    <div class="step" id="step-1">
+      <label for="endereco">Endereço</label>
+      <input id="endereco" placeholder="Rua Exemplo, 123" />
+
+      <label for="destinatario">Destinatário</label>
+      <input id="destinatario" placeholder="Nome do Cliente" />
+    </div>
+
+    <div class="step" id="step-2">
+      <h2>🔍 Revisar Pedido</h2>
+      <pre id="resumo">Carregando dados...</pre>
+    </div>
+
+    <div class="buttons">
+      <button onclick="voltar()" id="btn-voltar" disabled>⬅ Voltar</button>
+      <button onclick="proximo()" id="btn-proximo">Próximo ➡</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <h2>Status do Pedido</h2>
+    <label for="statusNumero">Número do Pedido</label>
+    <input id="statusNumero" placeholder="Ex: 12345" />
+    <button onclick="consultarStatus()">Consultar Status</button>
+    <pre id="resposta">Nenhuma consulta feita.</pre>
+  </div>
+
+  <script>
+    let passoAtual = 0;
+
+    function mostrarPasso(n) {
+      document.querySelectorAll('.step').forEach((el, i) => {
+        el.classList.toggle('active', i === n);
+        document.getElementById(`step-${i}-label`).classList.toggle('active', i === n);
+      });
+
+      document.getElementById('btn-voltar').disabled = n === 0;
+      document.getElementById('btn-proximo').textContent = n === 2 ? '📤 Enviar Pedido' : 'Próximo ➡';
+
+      if (n === 2) {
+        const dados = coletarDados();
+        document.getElementById('resumo').textContent = JSON.stringify(dados, null, 2);
+      }
+    }
+
+    function proximo() {
+      if (passoAtual === 2) {
+        registrar();
+      } else {
+        passoAtual++;
+        mostrarPasso(passoAtual);
+      }
+    }
+
+    function voltar() {
+      if (passoAtual > 0) {
+        passoAtual--;
+        mostrarPasso(passoAtual);
+      }
+    }
+
+    function coletarDados() {
+      return {
+        numero: document.getElementById('numero').value,
+        itens: document.getElementById('itens').value,
+        quantidades: document.getElementById('quantidades').value,
+        endereco: document.getElementById('endereco').value,
+        destinatario: document.getElementById('destinatario').value
+      };
+    }
+
+    async function registrar() {
+      const dados = coletarDados();
+      const res = await fetch('/registrar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      });
+      const json = await res.json();
+      document.getElementById('resposta').textContent = JSON.stringify(json, null, 2);
+      passoAtual = 0;
+      mostrarPasso(passoAtual);
+    }
+
+    async function consultarStatus() {
+      const numero = document.getElementById('statusNumero').value;
+      const res = await fetch(`/status/${numero}`);
+      const json = await res.json();
+    
+      const respostaDiv = document.getElementById('resposta');
+    
+      // Se o status for uma string, transforma em array para evitar erro no .map()
+      const statusArray = Array.isArray(json.status)
+        ? json.status
+        : [json.status || "Status desconhecido"];
+    
+      // Verifica se o pedido foi encontrado
+      if (statusArray.includes("Pedido não encontrado")) {
+        respostaDiv.innerHTML = "<strong>❌ Pedido não encontrado.</strong>";
+        return;
+      }
+    
+      respostaDiv.innerHTML = `
+        <strong>📦 Pedido:</strong> ${json.numeroPedido || "-"} <br/>
+        <strong>🧾 Itens:</strong> ${json.itens || "-"} <br/>
+        <strong>🔢 Quantidades:</strong> ${json.quantidades || "-"} <br/>
+        <strong>🏠 Endereço:</strong> ${json.enderecoEntrega || "-"} <br/>
+        <strong>👤 Destinatário:</strong> ${json.destinatario || "-"} <br/>
+        <strong>🚚 Status do pedido:</strong>
+        <ol>
+          ${statusArray.map(s => `<li>${s}</li>`).join('')}
+        </ol>
+      `;
+    }
+    
+    mostrarPasso(passoAtual);
+  </script>
+</body>
+</html>

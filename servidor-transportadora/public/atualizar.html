@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Atualizar Pedido</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f7f9fc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .form-container {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+      position: relative;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #555;
+      font-weight: 600;
+    }
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 0.6rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 1.2rem;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .toast {
+        background: #0056b3;
+        position: fixed;
+        top: 20px;              /* distância do topo */
+        left: 50%;              /* posiciona o meio do toast no meio da tela */
+        transform: translateX(-50%) translateY(-20px); /* centraliza horizontalmente e dá um leve "sobe" inicial */
+        background-color: #333;
+        color: #fff;
+        padding: 0.75rem 1.25rem;
+        border-radius: 8px;
+        opacity: 0;
+        transition: opacity 0.4s ease, transform 0.4s ease;
+        pointer-events: none;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        z-index: 9999;
+      }
+      
+      .toast.show {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateX(-50%) translateY(0);
+      }
+  </style>
+</head>
+<body> 
+ <div id="toast" class="toast"></div>
+  <div class="form-container">
+    <h1>Atualizar Status</h1>
+    <form id="statusForm">
+      <label for="numeroPedido">Número do Pedido:</label>
+      <input type="text" id="numeroPedido" name="numeroPedido" required />
+
+      <label for="novoStatus">Novo Status:</label>
+      <select id="novoStatus" name="novoStatus">
+        <option value="Aguardando coleta">Aguardando coleta</option>
+        <option value="Em transporte">Em transporte</option>
+        <option value="Entregue">Entregue</option>
+        <option value="Falha na entrega">Falha na entrega</option>
+      </select>
+
+      <button type="submit">Atualizar</button>
+    </form>
+  
+  </div>
+
+  <script>
+    const form = document.getElementById('statusForm');
+    const toast = document.getElementById('toast');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const numeroPedido = form.numeroPedido.value;
+      const novoStatus = form.novoStatus.value;
+
+      try {
+        const response = await fetch('/atualizar-status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({ numeroPedido, novoStatus })
+        });
+
+        const message = await response.text();
+        showToast(message);
+        form.reset();
+      } catch (error) {
+        showToast('Erro ao atualizar pedido');
+      }
+    });
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 4000);
+    }
+  </script>
+</body>
+</html>
