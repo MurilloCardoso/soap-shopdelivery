@@ -1,107 +1,114 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <title>Lista de Pedidos</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f0f2f5;
-      padding: 2rem;
-    }
-    .pedido {
-      background: white;
-      padding: 1rem 1.5rem;
-      margin-bottom: 1.5rem;
-      border-radius: 10px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-    }
-    .pedido h3 {
-      margin-top: 0;
-      color: #333;
-    }
-    .status {
-      color: #444;
-      margin-bottom: 0.5rem;
-    }
-    select, button {
-      padding: 0.5rem;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 1rem;
-      margin-right: 0.5rem;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-  </style>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lista de Pedidos</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #f0f2f5;
+        padding: 2rem;
+      }
+      .pedido {
+        background: white;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+      }
+      .pedido h3 {
+        margin-top: 0;
+        color: #333;
+      }
+      .status {
+        color: #444;
+        margin-bottom: 0.5rem;
+      }
+      select,
+      button {
+        padding: 0.5rem;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: 1rem;
+        margin-right: 0.5rem;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Lista de Pedidos</h1>
+    <div id="listaPedidos"></div>
 
-  <h1>Lista de Pedidos</h1>
-  <div id="listaPedidos"></div>
+    <script>
+      const todosStatus = [
+        "Aguardando coleta",
+        "Em transporte",
+        "Entregue",
+        "Falha na entrega",
+      ];
 
-  <script>
-  const todosStatus = [
-    "Aguardando coleta",
-    "Em transporte",
-    "Entregue",
-    "Falha na entrega"
-  ];
+      async function renderPedidos() {
+        const res = await fetch("/pedidos");
+        const pedidos = await res.json();
 
-  async function renderPedidos() {
-    const res = await fetch('/pedidos');
-    const pedidos = await res.json();
+        const container = document.getElementById("listaPedidos");
+        container.innerHTML = "";
 
-    const container = document.getElementById('listaPedidos');
-    container.innerHTML = '';
+        pedidos.forEach((pedido, index) => {
+          const statusRestantes = todosStatus.filter(
+            (s) => !pedido.status.includes(s)
+          );
 
-    pedidos.forEach((pedido, index) => {
-      const statusRestantes = todosStatus.filter(s => !pedido.status.includes(s));
+          const div = document.createElement("div");
+          div.className = "pedido";
 
-      const div = document.createElement('div');
-      div.className = 'pedido';
-
-      div.innerHTML = `
+          div.innerHTML = `
         <h3>Pedido #${pedido.numero}</h3>
-        <p class="status"><strong>Histórico:</strong> ${pedido.status.join(" ➜ ")}</p>
+        <p class="status"><strong>Histórico:</strong> ${pedido.status.join(
+          " ➜ "
+        )}</p>
         ${
-          statusRestantes.length > 0 ? `
+          statusRestantes.length > 0
+            ? `
             <select id="select-${index}">
-              ${statusRestantes.map(s => `<option value="${s}">${s}</option>`).join('')}
+              ${statusRestantes
+                .map((s) => `<option value="${s}">${s}</option>`)
+                .join("")}
             </select>
-            <button onclick="atualizarStatus(${index}, '${pedido.numero}')">Atualizar</button>
-          ` : `<p><em>Todos os status foram aplicados.</em></p>`
+            <button onclick="atualizarStatus(${index}, '${
+                pedido.numero
+              }')">Atualizar</button>
+          `
+            : `<p><em>Todos os status foram aplicados.</em></p>`
         }
       `;
 
-      container.appendChild(div);
-    });
-  }
+          container.appendChild(div);
+        });
+      }
 
-  async function atualizarStatus(index, numeroPedido) {
-    const select = document.getElementById(`select-${index}`);
-    const novoStatus = select.value;
+      async function atualizarStatus(index, numeroPedido) {
+        const select = document.getElementById(`select-${index}`);
+        const novoStatus = select.value;
 
-    await fetch('/atualizar-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ numeroPedido, novoStatus })
-    });
+        await fetch("/atualizar-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ numeroPedido, novoStatus }),
+        });
 
-    renderPedidos(); // atualiza a lista
-  }
+        renderPedidos(); // atualiza a lista
+      }
 
-  renderPedidos();
-</script>
-
-
-
-</body>
+      renderPedidos();
+    </script>
+  </body>
 </html>
