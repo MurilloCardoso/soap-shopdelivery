@@ -1,2 +1,3 @@
-./cliente-varejista/node_modules
-./servidor-transportadora/node_modules
+/cliente-varejista/node_modules
+/servidor-transportadora/node_modules
+/node_modules

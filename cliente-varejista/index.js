@@ -36,7 +36,22 @@ app.get('/status/:numero', async (req, res) => {
   const numeroPedido = req.params.numero;
   const client = await soap.createClientAsync(wsdlUrl);
   const [result] = await client.ConsultarStatusAsync({ numeroPedido });
-  res.json(result);
+
+  // Corrige se o status vier como { string: [...] }
+  const statusList =
+    Array.isArray(result.status?.string) ? result.status.string :
+    Array.isArray(result.status) ? result.status :
+    typeof result.status === 'string' ? [result.status] :
+    [];
+
+  res.json({
+    numeroPedido: result.numeroPedido,
+    destinatario: result.destinatario,
+    enderecoEntrega: result.enderecoEntrega,
+    itens: result.itens,
+    quantidades: result.quantidades,
+    status: statusList
+  });
 });
 
 app.listen(3000, () => console.log('Cliente rodando em http://localhost:3000'));
