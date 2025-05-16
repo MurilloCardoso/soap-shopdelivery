@@ -18,14 +18,22 @@ app.get('/atualizar', (req, res) => {
 
 app.post('/atualizar-status', (req, res) => {
   const { numeroPedido, novoStatus } = req.body;
-  if (pedidos[numeroPedido]) {
-    pedidos[numeroPedido].status = novoStatus;
-    return res.send(`Status do pedido ${numeroPedido} atualizado para "${novoStatus}"`);
+  const pedido = pedidos[numeroPedido];
+  if (pedido) {
+    const steps = Array.isArray(novoStatus) ? novoStatus : [novoStatus];
+    pedido.statusSteps = (pedido.statusSteps || []).concat(steps);
+    return res.send(`✅ Status atualizado para: ${pedido.statusSteps.join(', ')}`);
   } else {
-    return res.send(`Pedido ${numeroPedido} não encontrado.`);
+    return res.send(`❌ Pedido ${numeroPedido} não encontrado.`);
   }
 });
-
+app.get('/pedidos', (req, res) => {
+  const listaPedidos = Object.entries(pedidos).map(([numero, data]) => ({
+    numero,
+    status: data.statusSteps || []
+  }));
+  res.json(listaPedidos);
+});
 // Criação do servidor SOAP
 const service = {
   TransportadoraService: {
@@ -54,12 +62,14 @@ const service = {
       },      
       AtualizarStatus(args) {
         const pedido = pedidos[args.numeroPedido];
+ 
         if (pedido) {
           let steps = args.novoStatus;
           if (!Array.isArray(steps)) {
             steps = [steps]; // garantir array
           }
-          pedido.statusSteps = steps;
+    
+       pedido.statusSteps = pedido.statusSteps.concat(steps);
           return { mensagem: `Status atualizado com ${steps.length} passos` };
         } else {
           return { mensagem: 'Pedido não encontrado' };

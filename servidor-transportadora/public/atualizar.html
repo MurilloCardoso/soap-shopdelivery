@@ -2,139 +2,106 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Atualizar Pedido</title>
+  <title>Lista de Pedidos</title>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f7f9fc;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .form-container {
-      background: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
       padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 400px;
-      position: relative;
     }
-    h1 {
-      text-align: center;
-      color: #333;
+    .pedido {
+      background: white;
+      padding: 1rem 1.5rem;
       margin-bottom: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
     }
-    label {
-      display: block;
+    .pedido h3 {
+      margin-top: 0;
+      color: #333;
+    }
+    .status {
+      color: #444;
       margin-bottom: 0.5rem;
-      color: #555;
-      font-weight: 600;
     }
-    input[type="text"],
-    select {
-      width: 100%;
-      padding: 0.6rem;
+    select, button {
+      padding: 0.5rem;
+      border-radius: 6px;
       border: 1px solid #ccc;
-      border-radius: 8px;
       font-size: 1rem;
-      margin-bottom: 1.2rem;
-      box-sizing: border-box;
+      margin-right: 0.5rem;
     }
     button {
-      width: 100%;
-      padding: 0.75rem;
-      background: #007bff;
+      background-color: #007bff;
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 1rem;
       cursor: pointer;
-      transition: background 0.3s ease;
     }
     button:hover {
-      background: #0056b3;
+      background-color: #0056b3;
     }
-    .toast {
-        background: #0056b3;
-        position: fixed;
-        top: 20px;              /* distância do topo */
-        left: 50%;              /* posiciona o meio do toast no meio da tela */
-        transform: translateX(-50%) translateY(-20px); /* centraliza horizontalmente e dá um leve "sobe" inicial */
-        background-color: #333;
-        color: #fff;
-        padding: 0.75rem 1.25rem;
-        border-radius: 8px;
-        opacity: 0;
-        transition: opacity 0.4s ease, transform 0.4s ease;
-        pointer-events: none;
-        font-weight: 600;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        z-index: 9999;
-      }
-      
-      .toast.show {
-        opacity: 1;
-        pointer-events: auto;
-        transform: translateX(-50%) translateY(0);
-      }
   </style>
 </head>
-<body> 
- <div id="toast" class="toast"></div>
-  <div class="form-container">
-    <h1>Atualizar Status</h1>
-    <form id="statusForm">
-      <label for="numeroPedido">Número do Pedido:</label>
-      <input type="text" id="numeroPedido" name="numeroPedido" required />
+<body>
 
-      <label for="novoStatus">Novo Status:</label>
-      <select id="novoStatus" name="novoStatus">
-        <option value="Aguardando coleta">Aguardando coleta</option>
-        <option value="Em transporte">Em transporte</option>
-        <option value="Entregue">Entregue</option>
-        <option value="Falha na entrega">Falha na entrega</option>
-      </select>
-
-      <button type="submit">Atualizar</button>
-    </form>
-  
-  </div>
+  <h1>Lista de Pedidos</h1>
+  <div id="listaPedidos"></div>
 
   <script>
-    const form = document.getElementById('statusForm');
-    const toast = document.getElementById('toast');
+  const todosStatus = [
+    "Aguardando coleta",
+    "Em transporte",
+    "Entregue",
+    "Falha na entrega"
+  ];
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+  async function renderPedidos() {
+    const res = await fetch('/pedidos');
+    const pedidos = await res.json();
 
-      const numeroPedido = form.numeroPedido.value;
-      const novoStatus = form.novoStatus.value;
+    const container = document.getElementById('listaPedidos');
+    container.innerHTML = '';
 
-      try {
-        const response = await fetch('/atualizar-status', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: new URLSearchParams({ numeroPedido, novoStatus })
-        });
+    pedidos.forEach((pedido, index) => {
+      const statusRestantes = todosStatus.filter(s => !pedido.status.includes(s));
 
-        const message = await response.text();
-        showToast(message);
-        form.reset();
-      } catch (error) {
-        showToast('Erro ao atualizar pedido');
-      }
+      const div = document.createElement('div');
+      div.className = 'pedido';
+
+      div.innerHTML = `
+        <h3>Pedido #${pedido.numero}</h3>
+        <p class="status"><strong>Histórico:</strong> ${pedido.status.join(" ➜ ")}</p>
+        ${
+          statusRestantes.length > 0 ? `
+            <select id="select-${index}">
+              ${statusRestantes.map(s => `<option value="${s}">${s}</option>`).join('')}
+            </select>
+            <button onclick="atualizarStatus(${index}, '${pedido.numero}')">Atualizar</button>
+          ` : `<p><em>Todos os status foram aplicados.</em></p>`
+        }
+      `;
+
+      container.appendChild(div);
+    });
+  }
+
+  async function atualizarStatus(index, numeroPedido) {
+    const select = document.getElementById(`select-${index}`);
+    const novoStatus = select.value;
+
+    await fetch('/atualizar-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ numeroPedido, novoStatus })
     });
 
-    function showToast(message) {
-      toast.textContent = message;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 4000);
-    }
-  </script>
+    renderPedidos(); // atualiza a lista
+  }
+
+  renderPedidos();
+</script>
+
+
+
 </body>
 </html>
